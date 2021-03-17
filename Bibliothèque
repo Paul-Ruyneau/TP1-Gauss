@@ -1,0 +1,254 @@
+import numpy as np
+import time
+import random
+
+
+# création d'une matrice de dimension (n, n)
+def creer_matrice(n):
+    matrice = np.zeros(n*n)
+    matrice = matrice.reshape(n, n)
+    for i in range(matrice.shape[0]):
+        for j in range(matrice.shape[1]):
+            matrice[i, j] = random.randint(1, 10)
+    return matrice
+
+
+# création d'une matrice colonne de dimension (n, 1)
+def creer_matrice_colonne(n):
+    matrice_colonne = np.zeros(n)
+    matrice_colonne = matrice_colonne.reshape(n, 1)
+    for i in range(matrice_colonne.shape[0]):
+        for j in range(matrice_colonne.shape[1]):
+            matrice_colonne[i, j] = random.randint(1, 10)
+    return matrice_colonne
+
+
+# question 2
+def ReductionGauss(Aaug):
+    n = Aaug.shape[0]
+    for j in range(0, n):
+        for i in range(j+1, n):
+            g = Aaug[i, j]/Aaug[j, j]
+            Aaug[i] = Aaug[i]-g*Aaug[j]
+    return Aaug
+
+
+def ResolutionSystTriSup(Taug):
+    n = Taug.shape[0]
+    liste_x_resolus = []
+    x_n = Taug[n-1, n]/Taug[n-1, n-1]
+    liste_x_resolus.append(x_n)
+    liste_nb = []
+    for i in range(n-1):
+        liste_nb.append(i)
+    for i in reversed(liste_nb):
+        x_i = Taug[i, n]
+        cpt = -1
+        for j in range(i, n-1):
+            x_i = x_i-Taug[i, j+1]*liste_x_resolus[cpt]
+            cpt = cpt-1
+        x_i = x_i/Taug[i, i]
+        liste_x_resolus.append(x_i)
+    liste_x_resolus_ordonnes = []
+    for i in reversed(liste_x_resolus):
+        liste_x_resolus_ordonnes.append(i)
+    return liste_x_resolus_ordonnes
+
+
+def Gauss(A, B):
+    Aaug = np.concatenate((A, B), axis=1)
+    Taug = ReductionGauss(Aaug)
+    solution = ResolutionSystTriSup(Taug)
+    return solution
+
+
+# question 3
+def DecompositionLU(A):
+    n = A.shape[0]
+    L = np.zeros(n*n)
+    L = L.reshape(n, n)
+    U = np.zeros(n*n)
+    U = U.reshape(n,n)
+    for i in range (0, n):
+        for j in range (0, n):
+            U[i,j] = A[i,j]
+    for j in range(0, n):
+        for i in range(j+1, n):
+            g = U[i, j]/U[j, j]
+            U[i] = U[i]-g*U[j]
+            L[i, j] = g
+            np.fill_diagonal(L, 1)
+    return L, U
+
+
+def ResolutionLU(L, U, B):
+    # descente : résoudre LY = B
+    n = L.shape[0]
+    liste_y_resolus = []
+    y_1 = B[0, 0]/L[0, 0]
+    liste_y_resolus.append(y_1)
+    for i in range(1, n):
+        y_i = B[i, 0]
+        cpt = 0
+        for j in range(0, i):
+            y_i = y_i-L[i, j]*liste_y_resolus[cpt]
+            cpt = cpt+1
+        liste_y_resolus.append(y_i)
+    # remontée : résoudre UX = Y
+    matrice_y_resolus = np.zeros(n)
+    matrice_y_resolus = matrice_y_resolus.reshape(n, 1)
+    for i in range(matrice_y_resolus.shape[0]):
+        for j in range(matrice_y_resolus.shape[1]):
+            matrice_y_resolus[i, j] = liste_y_resolus[i]
+    Uaug = np.concatenate((U, matrice_y_resolus), axis=1)
+    liste_x_resolus = ResolutionSystTriSup(Uaug)
+    return liste_x_resolus  # solution de AX = B
+
+
+def Decomposition(A, B):
+    (lower, upper) = DecompositionLU(A)
+    solution = ResolutionLU(lower, upper, B)
+    return solution
+
+
+# question 4
+def GaussChoixPivotPartiel(A, B):
+    Aaug = np.concatenate((A, B), axis=1)
+    for j in range(A.shape[1]-1):
+        ppartiel = 0
+        ligne = 0
+        ligne_a_monter = []
+        ligne_a_descendre = []
+        for i in range(j, A.shape[0]):
+            if abs(Aaug[i, j]) >= ppartiel:
+                ppartiel = Aaug[i, j]
+                ligne = i
+        ligne_a_monter = list(Aaug[ligne])
+        ligne_a_descendre = list(Aaug[j])
+        for f in range(Aaug.shape[1]):
+            Aaug[j, f] = ligne_a_monter[f]
+            Aaug[ligne, f] = ligne_a_descendre[f]
+        for h in range(j+1, Aaug.shape[0]):
+            g = Aaug[h, j]/Aaug[j, j]
+            for k in range(j, Aaug.shape[1]):
+                Aaug[h, k] = Aaug[h, k]-g*Aaug[j, k]
+    solution = ResolutionSystTriSup(Aaug)
+    return solution
+
+
+def GaussChoixPivotTotal(A, B):
+    Aaug = np.concatenate((A, B), axis=1)
+    ordre_colonnes = []
+    for e in range(A.shape[1]):
+        ordre_colonnes.append(e)
+    for i in range(A.shape[0]):
+        ptotal = 0
+        colonne = 0
+        colonne_a_gaucher = []
+        colonne_a_droiter = []
+        for j in range(i, A.shape[1]):
+            if abs(Aaug[i, j]) >= ptotal:
+                ptotal = Aaug[i, j]
+                colonne = j
+        for h in range(A.shape[0]):
+            colonne_a_gaucher.append(Aaug[h, colonne])
+            colonne_a_droiter.append(Aaug[h, i])
+        echange = ordre_colonnes[colonne]
+        ordre_colonnes[colonne] = ordre_colonnes[i]
+        ordre_colonnes[i] = echange
+        for f in range(A.shape[0]):
+            echange2 = Aaug[f, i]
+            Aaug[f, i] = Aaug[f, colonne]
+            Aaug[f, colonne] = echange2
+        for m in range(i+1, Aaug.shape[0]):
+            g = Aaug[m, i]/Aaug[i, i]
+            for k in range(i, Aaug.shape[1]):
+                Aaug[m, k] = Aaug[m, k]-g*Aaug[i, k]
+    solution = ResolutionSystTriSup(Aaug)
+    for i in range(len(ordre_colonnes)):
+        imin = i
+        for j in range(i+1, len(ordre_colonnes)):
+            if ordre_colonnes[j] < ordre_colonnes[imin]:
+                imin = j
+        if imin != i:
+            tmp1 = ordre_colonnes[imin]
+            ordre_colonnes[imin] = ordre_colonnes[i]
+            ordre_colonnes[i] = tmp1
+            tmp2 = solution[imin]
+            solution[imin] = solution[i]
+            solution[i] = tmp2
+    return solution
+
+
+def mesure_temps(n):
+    X = []
+    Y = []
+    Y1 = []
+    Y2 = []
+    Y3 = []
+    Y4 = []
+    for i in range(200, n, 50):
+        print(i)
+        X.append(i)
+        A = creer_matrice(i)
+        B = creer_matrice_colonne(i)
+        # temps avec Gauss
+        debut_temps_G = time.time()
+        Gauss(A, B)
+        fin_temps_G = time.time()
+        temps_total_G = fin_temps_G-debut_temps_G
+        Y1.append(temps_total_G)
+        # temps avec la décomposition LU
+        debut_temps_LU = time.time()
+        Decomposition(A, B)
+        fin_temps_LU = time.time()
+        temps_total_LU = fin_temps_LU-debut_temps_LU
+        Y1.append(temps_total_LU)
+        # temps avec le pivot partiel
+        debut_temps_ppartiel = time.time()
+        GaussChoixPivotPartiel(A, B)
+        fin_temps_ppartiel = time.time()
+        temps_total_ppartiel = fin_temps_ppartiel-debut_temps_ppartiel
+        Y3.append(temps_total_ppartiel)
+        # temps avec pivot total
+        debut_temps_ptot = time.time()
+        GaussChoixPivotTotal(A, B)
+        fin_temps_ptot = time.time()
+        temps_total_ptot = fin_temps_ptot-debut_temps_ptot
+        Y4.append(temps_total_ptot)
+        # temps avec linalg
+        debut_temps_l = time.time()
+        np.linalg.solve(A, B)
+        fin_temps_l = time.time()
+        temps_total_l = fin_temps_l-debut_temps_l
+        Y.append(temps_total_l)
+    return X, Y, Y1, Y2, Y3, Y4
+
+
+def calcul_erreur(n):
+    X = []
+    Y = []
+    Y1 = []
+    Y2 = []
+    Y3 = []
+    Y4 = []
+    for i in range(200, n, 50):
+        print(i)
+        X.append(i)
+        A = creer_matrice(i)
+        B = creer_matrice_colonne(i)
+        # calcul des solutions avec chaque méthode
+        x1 = Gauss(A, B)
+        x2 = Decomposition(A, B)
+        x3 = GaussChoixPivotPartiel(A, B)
+        x4 = GaussChoixPivotTotal(A, B)
+        # calcul de l'erreur
+        erreur_gauss = np.linalg.norm(np.dot(A, x1)-np.ravel(B))
+        erreur_LU = np.linalg.norm(np.dot(A, x2)-np.ravel(B))
+        erreur_pivot_partiel = np.linalg.norm(np.dot(A, x3)-np.ravel(B))
+        erreur_pivot_total = np.linalg.norm(np.dot(A, x4)-np.ravel(B))
+        Y1.append(erreur_gauss)
+        Y2.append(erreur_LU)
+        Y3.append(erreur_pivot_partiel)
+        Y4.append(erreur_pivot_total)
+    return X, Y1, Y2, Y3, Y4

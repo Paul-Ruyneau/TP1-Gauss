@@ -203,7 +203,7 @@ def mesure_temps(n):
         Decomposition(A, B)
         fin_temps_LU = time.time()
         temps_total_LU = fin_temps_LU-debut_temps_LU
-        Y1.append(temps_total_LU)
+        Y2.append(temps_total_LU)
         # temps avec le pivot partiel
         debut_temps_ppartiel = time.time()
         GaussChoixPivotPartiel(A, B)

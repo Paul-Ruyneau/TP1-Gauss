@@ -36,7 +36,7 @@ plt.xlabel("n, taille de la matrice")
 plt.ylabel("temps en s")
 plt.legend()
 plt.show()
-'''
+
 # ERREUR
 x, y1, y2, y3, y4 = TP1.calcul_erreur(n)
 # on trace err = f(n) avec ou sans échelle semilog
@@ -50,4 +50,3 @@ plt.xlabel("n, taille de la matrice")
 plt.ylabel("erreur")
 plt.legend()
 plt.show()
-'''
